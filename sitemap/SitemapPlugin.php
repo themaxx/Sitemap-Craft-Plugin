@@ -37,27 +37,25 @@ class SitemapPlugin extends BasePlugin
         foreach (craft()->sitemap->getSections() as $section)
         {
             $settingKey = sprintf('section_%d', $section->id);
-            $settingKeyEnabled = sprintf('%s_isEnabled', $settingKey);
-            $settingKeyFreq = sprintf('%s_frequency', $settingKey);
-            $settingKeyPriority = sprintf('%s_priority', $settingKey);
-
-            $settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
-            $settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
-            $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
+            $this->_settings($settingKey, $settings);
         }
 
         foreach (craft()->sitemap->getCategoryGroups() as $group) {
             $settingKey = sprintf('category_group_%d', $group->id);
-            $settingKeyEnabled = sprintf('%s_isEnabled', $settingKey);
-            $settingKeyFreq = sprintf('%s_frequency', $settingKey);
-            $settingKeyPriority = sprintf('%s_priority', $settingKey);
-
-            $settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
-            $settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
-            $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
+            $this->_settings($settingKey, $settings);
         }
 
         return $settings;
+    }
+
+    private function _settings($settingKey, &$settings) {
+        $settingKeyEnabled = sprintf('%s_isEnabled', $settingKey);
+        $settingKeyFreq = sprintf('%s_frequency', $settingKey);
+        $settingKeyPriority = sprintf('%s_priority', $settingKey);
+
+        $settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
+        $settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
+        $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
     }
 
     public function hasCpSection()
