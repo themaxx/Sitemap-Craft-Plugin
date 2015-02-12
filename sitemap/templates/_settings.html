@@ -1,14 +1,11 @@
-<p>Each of your sections are shown below.  Select the relevant options you want for each section, or alternatively flip the switch to remove the from the sitemap completely.</p>
-
-{% for section in sections %}
-    {% set currentSettings = craft.sitemap.settingsForSection(section) %}
+{% macro optionsFor(currentSettings, item, settingsPrefix) %}
 
     <hr/>
-    <h2>{{ section.name }}</h2>
+    <h2>{{ item.name }}</h2>
 
-    {% set isEnabledFieldName = 'section_' ~ section.id ~ '_isEnabled' %}
-    {% set frequencyFieldName = 'section_' ~ section.id ~ '_frequency' %}
-    {% set priorityFieldName = 'section_' ~ section.id ~ '_priority' %}
+    {% set isEnabledFieldName = settingsPrefix ~ item.id ~ '_isEnabled' %}
+    {% set frequencyFieldName = settingsPrefix ~ item.id ~ '_frequency' %}
+    {% set priorityFieldName = settingsPrefix ~ item.id ~ '_priority' %}
 
     <div class="field" id="{{ isEnabledFieldName }}-field">
         <div class="heading">
@@ -62,4 +59,20 @@
             </select>
         </div>
     </div>
+
+{% endmacro %}
+
+<p>Each of your sections are shown below. Select the relevant options you want for each section, or alternatively flip the switch to remove the from the sitemap completely.</p>
+
+{% import _self as macros %}
+{% for section in sections %}
+    {% set currentSettings = craft.sitemap.settingsForSection(section) %}
+    {{ macros.optionsFor(currentSettings, section, 'section_') }}
+{% endfor %}
+
+{% for group in categoryGroups %}
+    {% if group.hasUrls %}
+            {% set currentSettings = craft.sitemap.settingsForCategoryGroup(group) %}
+            {{ macros.optionsFor(currentSettings, group, 'category_group_') }}
+    {% endif %}
 {% endfor %}

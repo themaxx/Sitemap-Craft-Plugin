@@ -46,6 +46,17 @@ class SitemapPlugin extends BasePlugin
             $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
         }
 
+        foreach (craft()->sitemap->getCategoryGroups() as $group) {
+            $settingKey = sprintf('category_group_%d', $group->id);
+            $settingKeyEnabled = sprintf('%s_isEnabled', $settingKey);
+            $settingKeyFreq = sprintf('%s_frequency', $settingKey);
+            $settingKeyPriority = sprintf('%s_priority', $settingKey);
+
+            $settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
+            $settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
+            $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
+        }
+
         return $settings;
     }
 
@@ -58,6 +69,7 @@ class SitemapPlugin extends BasePlugin
     {
         return craft()->templates->render('sitemap/_settings', array(
             'sections' => craft()->sitemap->getSections(),
+            'categoryGroups' => craft()->sitemap->getCategoryGroups(),
             'settings' => $this->getSettings()
         ));
     }

@@ -14,4 +14,9 @@ class SitemapVariable
     {
         return craft()->sitemap->getSettingsForSection($section);
     }
+
+    public function getSettingsForCategoryGroup(CategoryGroupModel $group)
+    {
+        return craft()->sitemap->getSettingsForCategoryGroup($group);
+    }
 }

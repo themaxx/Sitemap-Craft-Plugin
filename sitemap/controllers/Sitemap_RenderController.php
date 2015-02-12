@@ -28,6 +28,7 @@ class Sitemap_RenderController extends BaseController
 
         $this->createUrlSet();
         $this->addSections();
+        $this->addCategories();
 
         print($this->dom->saveXML());
     }
@@ -43,6 +44,31 @@ class Sitemap_RenderController extends BaseController
         $urlModified = $this->dom->createElement('lastmod');
         $urlModified->nodeValue = $entry->postDate->w3c();
         $url->appendChild($urlModified);
+
+        $urlChangeFreq = $this->dom->createElement('changefreq');
+        $urlChangeFreq->nodeValue = $changeFrequency;
+        $url->appendChild($urlChangeFreq);
+
+        $urlPriority = $this->dom->createElement('priority');
+        $urlPriority->nodeValue = $priority;
+        $url->appendChild($urlPriority);
+
+        $this->urlset->appendChild($url);
+    }
+
+    private function addCategory(CategoryModel $category, $changeFrequency, $priority) {
+        if (! $category->group->hasUrls) {
+            return;
+        }
+        $url = $this->dom->createElement('url');
+
+        $urlLoc = $this->dom->createElement('loc');
+        $urlLoc->nodeValue = $category->getUrl();
+        $url->appendChild($urlLoc);
+
+        // $urlModified = $this->dom->createElement('lastmod');
+        // $urlModified->nodeValue = $entry->postDate->w3c();
+        // $url->appendChild($urlModified);
 
         $urlChangeFreq = $this->dom->createElement('changefreq');
         $urlChangeFreq->nodeValue = $changeFrequency;
@@ -73,6 +99,21 @@ class Sitemap_RenderController extends BaseController
         }
     }
 
+    private function addCategoryGroup(CategoryGroupModel $group) {
+        $currentSettings = craft()->sitemap->getSettingsForCategoryGroup($group);
+
+        if (is_null($currentSettings) || $currentSettings['isEnabled'] === false || $currentSettings['isEnabled'] == 0)
+        {
+            return;
+        }
+        $criteria = craft()->elements->getCriteria(ElementType::Category);
+        $criteria->group = $group->handle;
+
+        foreach ($criteria->getIterator() as $category) {
+            $this->addCategory($category, $currentSettings['frequency'], $currentSettings['priority']);
+        }
+    }
+
     private function addSections()
     {
         $sections = craft()->sections->getAllSections();
@@ -80,6 +121,13 @@ class Sitemap_RenderController extends BaseController
         foreach ($sections as $section)
         {
             $this->addSection($section);
+        }
+    }
+
+    private function addCategories() {
+        $categoryGroups = craft()->categories->getAllGroups();
+        foreach ($categoryGroups as $group) {
+            $this->addCategoryGroup($group);
         }
     }
 
