@@ -12,7 +12,7 @@ class SitemapPlugin extends BasePlugin
 {
 	function getDeveloper()
 	{
-		return 'Andy Heathershaw';
+		return 'Andy Heathershaw (modified by NextThought)';
 	}
 
 	function getDeveloperUrl()
@@ -27,7 +27,7 @@ class SitemapPlugin extends BasePlugin
 
 	function getVersion()
 	{
-		return '1.0.0';
+		return '1.1.0';
 	}
 
 	protected function defineSettings()
