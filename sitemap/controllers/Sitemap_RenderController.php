@@ -10,132 +10,122 @@ namespace Craft;
 
 class Sitemap_RenderController extends BaseController
 {
-    protected $allowAnonymous = true;
+	protected $allowAnonymous = true;
 
-    /**
-     * @var \DOMDocument
-     */
-    private $dom;
+	/**
+	 * @var \DOMDocument
+	 */
+	private $dom;
 
-    /**
-     * @var \DOMElement
-     */
-    private $urlset;
+	/**
+	 * @var \DOMElement
+	 */
+	private $urlset;
 
-    public function actionRenderSitemap()
-    {
-        header('Content-type: text/xml');
+	public function actionRenderSitemap()
+	{
+		header('Content-type: text/xml');
 
-        $this->createUrlSet();
-        $this->addSections();
-        $this->addCategories();
+		$this->createUrlSet();
+		$this->addSections();
+		$this->addCategories();
 
-        print($this->dom->saveXML());
-    }
+		print($this->dom->saveXML());
+	}
 
-    private function addElement(EntryModel $entry, $changeFrequency, $priority)
-    {
-        $url = $this->dom->createElement('url');
+	private function addElement(BaseElementModel $entry, $changeFrequency, $priority, $modDate=null)
+	{
+		$url = $this->dom->createElement('url');
 
-        $urlLoc = $this->dom->createElement('loc');
-        $urlLoc->nodeValue = $entry->getUrl();
-        $url->appendChild($urlLoc);
+		$urlLoc = $this->dom->createElement('loc');
+		$urlLoc->nodeValue = $entry->getUrl();
+		$url->appendChild($urlLoc);
 
-        $urlModified = $this->dom->createElement('lastmod');
-        $urlModified->nodeValue = $entry->postDate->w3c();
-        $url->appendChild($urlModified);
+		if ($modDate) {
+			$urlModified = $this->dom->createElement('lastmod');
+			$urlModified->nodeValue = $modDate;
+			$url->appendChild($urlModified);
+		}
+		$urlChangeFreq = $this->dom->createElement('changefreq');
+		$urlChangeFreq->nodeValue = $changeFrequency;
+		$url->appendChild($urlChangeFreq);
 
-        $urlChangeFreq = $this->dom->createElement('changefreq');
-        $urlChangeFreq->nodeValue = $changeFrequency;
-        $url->appendChild($urlChangeFreq);
+		$urlPriority = $this->dom->createElement('priority');
+		$urlPriority->nodeValue = $priority;
+		$url->appendChild($urlPriority);
 
-        $urlPriority = $this->dom->createElement('priority');
-        $urlPriority->nodeValue = $priority;
-        $url->appendChild($urlPriority);
+		$this->urlset->appendChild($url);
+	}
 
-        $this->urlset->appendChild($url);
-    }
+	private function addSection(SectionModel $section)
+	{
+		$currentSettings = craft()->sitemap->getSettingsForSection($section);
 
-    private function addCategory(CategoryModel $category, $changeFrequency, $priority) {
-        if (! $category->group->hasUrls) {
-            return;
-        }
-        $url = $this->dom->createElement('url');
+		if (is_null($currentSettings) || $currentSettings['isEnabled'] === false || $currentSettings['isEnabled'] == 0)
+		{
+			return;
+		}
 
-        $urlLoc = $this->dom->createElement('loc');
-        $urlLoc->nodeValue = $category->getUrl();
-        $url->appendChild($urlLoc);
+		$criteria = craft()->elements->getCriteria(ElementType::Entry);
+		$elements = $criteria->find(array('section' => $section->handle));
 
-        // $urlModified = $this->dom->createElement('lastmod');
-        // $urlModified->nodeValue = $entry->postDate->w3c();
-        // $url->appendChild($urlModified);
+		foreach ($elements as $element)
+		{
+			$this->addElement($element, $currentSettings['frequency'], $currentSettings['priority'], $element->postDate->w3c());
+		}
+	}
 
-        $urlChangeFreq = $this->dom->createElement('changefreq');
-        $urlChangeFreq->nodeValue = $changeFrequency;
-        $url->appendChild($urlChangeFreq);
+	private function addSections()
+	{
+		$sections = craft()->sections->getAllSections();
 
-        $urlPriority = $this->dom->createElement('priority');
-        $urlPriority->nodeValue = $priority;
-        $url->appendChild($urlPriority);
+		foreach ($sections as $section)
+		{
+			$this->addSection($section);
+		}
+	}
 
-        $this->urlset->appendChild($url);
-    }
+	private function addCategories() {
+		$categoryGroups = craft()->categories->getAllGroups();
+		foreach ($categoryGroups as $group)
+		{
+			$this->addCategoryGroup($group);
+		}
+	}
 
-    private function addSection(SectionModel $section)
-    {
-        $currentSettings = craft()->sitemap->getSettingsForSection($section);
+	private function addCategoryGroup(CategoryGroupModel $group) {
+		if (! $group->hasUrls)
+		{
+			return;
+		}
+		$currentSettings = craft()->sitemap->getSettingsForCategoryGroup($group);
+		if (is_null($currentSettings) || $currentSettings['isEnabled'] === false || $currentSettings['isEnabled'] == 0)
+		{
+			return;
+		}
+		$criteria = craft()->elements->getCriteria(ElementType::Category);
+		$criteria->group = $group->handle;
 
-        if (is_null($currentSettings) || $currentSettings['isEnabled'] === false || $currentSettings['isEnabled'] == 0)
-        {
-            return;
-        }
+		foreach ($criteria->getIterator() as $category)
+		{
+			$c = craft()->elements->getCriteria(ElementType::Entry);
+			$c->relatedTo = $category;
+			$c->order = 'postDate DESC';
+			$c->limit = 1;
 
-        $criteria = craft()->elements->getCriteria(ElementType::Entry);
-        $elements = $criteria->find(array('section' => $section->handle));
+			$latestEntry = $c->first();
 
-        foreach ($elements as $element)
-        {
-            $this->addElement($element, $currentSettings['frequency'], $currentSettings['priority']);
-        }
-    }
+			$modDate = $latestEntry ? $latestEntry->postDate->w3c() : null;
 
-    private function addCategoryGroup(CategoryGroupModel $group) {
-        $currentSettings = craft()->sitemap->getSettingsForCategoryGroup($group);
+			$this->addElement($category, $currentSettings['frequency'], $currentSettings['priority'], $modDate);
+		}
+	}
 
-        if (is_null($currentSettings) || $currentSettings['isEnabled'] === false || $currentSettings['isEnabled'] == 0)
-        {
-            return;
-        }
-        $criteria = craft()->elements->getCriteria(ElementType::Category);
-        $criteria->group = $group->handle;
-
-        foreach ($criteria->getIterator() as $category) {
-            $this->addCategory($category, $currentSettings['frequency'], $currentSettings['priority']);
-        }
-    }
-
-    private function addSections()
-    {
-        $sections = craft()->sections->getAllSections();
-
-        foreach ($sections as $section)
-        {
-            $this->addSection($section);
-        }
-    }
-
-    private function addCategories() {
-        $categoryGroups = craft()->categories->getAllGroups();
-        foreach ($categoryGroups as $group) {
-            $this->addCategoryGroup($group);
-        }
-    }
-
-    private function createUrlSet()
-    {
-        $this->dom = new \DOMDocument('1.0', 'UTF-8');
-        $this->urlset = $this->dom->createElement("urlset");
-        $this->urlset->setAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
-        $this->dom->appendChild($this->urlset);
-    }
+	private function createUrlSet()
+	{
+		$this->dom = new \DOMDocument('1.0', 'UTF-8');
+		$this->urlset = $this->dom->createElement("urlset");
+		$this->urlset->setAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+		$this->dom->appendChild($this->urlset);
+	}
 }

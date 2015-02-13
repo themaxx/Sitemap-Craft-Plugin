@@ -10,82 +10,62 @@ namespace Craft;
 
 class SitemapService extends BaseApplicationComponent
 {
-    public function getSections()
-    {
-        return craft()->sections->getAllSections();
-    }
+	public function getSections()
+	{
+		return craft()->sections->getAllSections();
+	}
 
-    public function getCategoryGroups()
-    {
-        return craft()->categories->getAllGroups();
-    }
+	public function getCategoryGroups()
+	{
+		return craft()->categories->getAllGroups();
+	}
 
-    public function getSettingsForCategoryGroup(CategoryGroupModel $group) {
-        $plugin = craft()->plugins->getPlugin('sitemap');
+	public function getSettingsKeyPrefixFor(BaseModel $item) {
+		return sprintf('%s_%d', $item->classHandle, $item->id);
+	}
 
-        if (is_null($plugin))
-        {
-            return array();
-        }
+	private function getSettingsFor(BaseModel $item) {
+		$plugin = craft()->plugins->getPlugin('sitemap');
 
-        $settings = $plugin->getSettings();
+		if (is_null($plugin))
+		{
+			return array();
+		}
 
-        $isEnabled = sprintf('category_group_%d_isEnabled', $group->id);
-        $frequency = sprintf('category_group_%d_frequency', $group->id);
-        $priority = sprintf('category_group_%d_priority', $group->id);
+		$settings = $plugin->getSettings();
 
-        $result = array();
+		$prefix = $this->getSettingsKeyPrefixFor($item);
+		$isEnabled = sprintf('%s_isEnabled', $prefix);
+		$frequency = sprintf('%s_frequency', $prefix);
+		$priority = sprintf('%s_priority', $prefix);
 
-        if (isset($settings->$isEnabled))
-        {
-            $result['isEnabled'] = $settings->$isEnabled;
-        }
+		$result = array();
 
-        if (isset($settings->$frequency))
-        {
-            $result['frequency'] = $settings->$frequency;
-        }
+		if (isset($settings->$isEnabled))
+		{
+			$result['isEnabled'] = $settings->$isEnabled;
+		}
 
-        if (isset($settings->$priority))
-        {
-            $result['priority'] = $settings->$priority;
-        }
+		if (isset($settings->$frequency))
+		{
+			$result['frequency'] = $settings->$frequency;
+		}
 
-        return $result;
-    }
+		if (isset($settings->$priority))
+		{
+			$result['priority'] = $settings->$priority;
+		}
 
-    public function getSettingsForSection(SectionModel $section)
-    {
-        $plugin = craft()->plugins->getPlugin('sitemap');
+		return $result;
+	}
 
-        if (is_null($plugin))
-        {
-            return array();
-        }
+	public function getSettingsForCategoryGroup(CategoryGroupModel $group)
+	{
+		return $this->getSettingsFor($group);
+	}
 
-        $settings = $plugin->getSettings();
-
-        $isEnabled = sprintf('section_%d_isEnabled', $section->id);
-        $frequency = sprintf('section_%d_frequency', $section->id);
-        $priority = sprintf('section_%d_priority', $section->id);
-
-        $result = array();
-
-        if (isset($settings->$isEnabled))
-        {
-            $result['isEnabled'] = $settings->$isEnabled;
-        }
-
-        if (isset($settings->$frequency))
-        {
-            $result['frequency'] = $settings->$frequency;
-        }
-
-        if (isset($settings->$priority))
-        {
-            $result['priority'] = $settings->$priority;
-        }
-
-        return $result;
-    }
+	public function getSettingsForSection(SectionModel $section)
+	{
+		return $this->getSettingsFor($section);
+	}
 }

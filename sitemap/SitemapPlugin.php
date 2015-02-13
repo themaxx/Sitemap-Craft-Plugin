@@ -10,79 +10,78 @@ namespace Craft;
 
 class SitemapPlugin extends BasePlugin
 {
-    function getDeveloper()
-    {
-        return 'Andy Heathershaw';
-    }
+	function getDeveloper()
+	{
+		return 'Andy Heathershaw';
+	}
 
-    function getDeveloperUrl()
-    {
-        return 'http://www.andys.website/software/sitemap';
-    }
+	function getDeveloperUrl()
+	{
+		return 'http://www.andys.website/software/sitemap';
+	}
 
-    function getName()
-    {
-        return Craft::t('XML Sitemap');
-    }
+	function getName()
+	{
+		return Craft::t('XML Sitemap');
+	}
 
-    function getVersion()
-    {
-        return '1.0.0';
-    }
+	function getVersion()
+	{
+		return '1.0.0';
+	}
 
-    protected function defineSettings()
-    {
-        $settings = array();
+	protected function defineSettings()
+	{
+		$settings = array();
 
-        foreach (craft()->sitemap->getSections() as $section)
-        {
-            $settingKey = sprintf('section_%d', $section->id);
-            $this->_settings($settingKey, $settings);
-        }
+		foreach (craft()->sitemap->getSections() as $section)
+		{
+			$this->_settings($section, $settings);
+		}
 
-        foreach (craft()->sitemap->getCategoryGroups() as $group) {
-            $settingKey = sprintf('category_group_%d', $group->id);
-            $this->_settings($settingKey, $settings);
-        }
+		foreach (craft()->sitemap->getCategoryGroups() as $group) {
+			$this->_settings($group, $settings);
+		}
 
-        return $settings;
-    }
+		return $settings;
+	}
 
-    private function _settings($settingKey, &$settings) {
-        $settingKeyEnabled = sprintf('%s_isEnabled', $settingKey);
-        $settingKeyFreq = sprintf('%s_frequency', $settingKey);
-        $settingKeyPriority = sprintf('%s_priority', $settingKey);
+	private function _settings(BaseModel $item, &$settings) {
+		$prefix = craft()->sitemap->getSettingsKeyPrefixFor($item);
+		$settingKeyEnabled = sprintf('%s_isEnabled', $prefix);
+		$settingKeyFreq = sprintf('%s_frequency', $prefix);
+		$settingKeyPriority = sprintf('%s_priority', $prefix);
 
-        $settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
-        $settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
-        $settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
-    }
+		$settings[$settingKeyEnabled] = array(AttributeType::Bool, 'default' => true);
+		$settings[$settingKeyFreq] = array(AttributeType::String, 'default' => 'weekly');
+		$settings[$settingKeyPriority] = array(AttributeType::String, 'default' => '0.5');
+	}
 
-    public function hasCpSection()
-    {
-        return false;
-    }
+	public function hasCpSection()
+	{
+		return false;
+	}
 
-    public function getSettingsHtml()
-    {
-        return craft()->templates->render('sitemap/_settings', array(
-            'sections' => craft()->sitemap->getSections(),
-            'categoryGroups' => craft()->sitemap->getCategoryGroups(),
-            'settings' => $this->getSettings()
-        ));
-    }
+	public function getSettingsHtml()
+	{
+		return craft()->templates->render('sitemap/_settings', array(
+			'sections' => craft()->sitemap->getSections(),
+			'categoryGroups' => craft()->sitemap->getCategoryGroups(),
+			'settings' => $this->getSettings()
+		));
+	}
 
-    public function prepSettings($settings)
-    {
-        // Modify $settings here...
+	public function prepSettings($settings)
+	{
+		// Modify $settings here...
 
-        return $settings;
-    }
+		return $settings;
+	}
 
-    public function registerSiteRoutes()
-    {
-        return array(
-            'sitemap.xml' => array('action' => 'sitemap/render/renderSitemap')
-        );
-    }
+	public function registerSiteRoutes()
+	{
+		return array(
+			'sitemap.xml' => array('action' => 'sitemap/render/renderSitemap')
+		);
+	}
 }
